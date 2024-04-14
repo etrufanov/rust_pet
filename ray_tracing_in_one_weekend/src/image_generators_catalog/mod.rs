@@ -5,22 +5,32 @@ const IMG_MAX_COLOR: u8 = 255;
 
 pub trait PixelData {
     /// Generates each pixel data
-    fn get_pixel_rgb(&self, x: usize, y: usize) -> [u8; 3];
+    fn get_pixel_rgb(&self, x: u16, y: u16) -> [u8; 3];
 }
 
 pub trait ImageShape {
     /// Returns image shape
-    fn shape(&self) -> [usize; 2];
+    fn shape(&self) -> [u16; 2];
 }
 
-/// Base image type with defined shape (width and height)
+/// Base image type with defined shape (aspect ratio and width)
 pub struct Image {
-    width: usize,
-    height: usize,
+    _aspect_ratio: f64,
+    width: u16,
+    height: u16,
 }
 
 impl Image {
-    pub fn new(width: usize, height: usize) -> Self where Self: Sized {
-        Self { width, height }
+    pub fn new(aspect_ratio: f64, width: u16) -> Self
+    where
+        Self: Sized,
+    {
+        let height = u16::try_from(((width as f64) / aspect_ratio).round() as i64)
+            .expect("image height should be not greater than 65,536 px");
+        Self {
+            _aspect_ratio: aspect_ratio,
+            width,
+            height,
+        }
     }
 }
