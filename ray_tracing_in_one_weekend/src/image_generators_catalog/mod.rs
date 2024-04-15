@@ -1,4 +1,6 @@
+pub mod image_with_camera;
 pub mod black_and_white_gradient;
+pub mod white_sphere;
 
 /// 0-255 u8 value for each rgb component
 const IMG_MAX_COLOR: u8 = 255;
@@ -9,7 +11,7 @@ pub trait PixelData {
 }
 
 pub trait ImageShape {
-    /// Returns image shape
+    /// Returns image shape `[width, height]`
     fn shape(&self) -> [u16; 2];
 }
 
@@ -32,5 +34,11 @@ impl Image {
             width,
             height,
         }
+    }
+}
+
+impl ImageShape for Image {
+    fn shape(&self) -> [u16; 2] {
+        [self.width, self.height]
     }
 }

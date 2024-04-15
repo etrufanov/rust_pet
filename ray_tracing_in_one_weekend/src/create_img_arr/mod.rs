@@ -8,10 +8,10 @@ pub fn create_img_arr<T: PixelData + ImageShape>(img: &T) -> Vec<Vec<[u8; 3]>> {
 
     let img_arr = (0..img_height)
         .into_iter()
-        .map(|x| {
+        .map(|y| {
             (0..img_width)
                 .into_iter()
-                .map(|y| img.get_pixel_rgb(x, y))
+                .map(|x| img.get_pixel_rgb(x, y))
                 .collect::<Vec<[u8; 3]>>()
         })
         .collect::<Vec<Vec<[u8; 3]>>>();
