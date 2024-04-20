@@ -2,6 +2,7 @@ use crate::vector::Vector;
 
 use super::RayToObjectHandler;
 
+/// sphere object inside a scene
 pub struct Sphere {
 	center: Vector,
 	radius: f64,
@@ -46,9 +47,6 @@ impl RayToObjectHandler for Sphere {
 		let b = 2.0 * self.center.dot(pixel_vec);
 		let a = pixel_vec.sq_norm();
 		let c = self.center.sq_norm() - self.radius.powi(2);
-
-		// println!("pixel_vec: {pixel_vec:?}");
-		// println!("b: {b}, a: {a}, c: {c}");
 
 		let does_ray_intersect = b.powi(2) >= 4.0 * a * c;
 		does_ray_intersect

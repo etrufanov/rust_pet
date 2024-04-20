@@ -38,7 +38,7 @@ impl Sub<f64> for Vector {
 	type Output = Self;
 
 	fn sub(self, rhs: f64) -> Self {
-		self - rhs
+		self + (-rhs)
     }
 }
 

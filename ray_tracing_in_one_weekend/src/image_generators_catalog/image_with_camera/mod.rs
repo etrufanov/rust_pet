@@ -1,7 +1,6 @@
 pub mod scene_objects;
 
 use crate::{camera::Camera, image_generators_catalog::{Image, ImageShape}, vector::Vector};
-use super::PixelData;
 
 /// Base class to define how image relates to camera 
 pub struct ImageWithCamera {
@@ -35,12 +34,6 @@ impl ImageWithCamera {
 			camera.viewport.viewport_u / 2.0 -
 			camera.viewport.viewport_v / 2.0;
 		let pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) / 2.0;
-
-		// println!("\
-		// viewport_u: {:?}, viewport_v: {:?}\n
-		// pixel_delta_u: {pixel_delta_u:?}, pixel_delta_v: {pixel_delta_v:?}\n
-		// viewport_upper_left: {viewport_upper_left:?}, pixel00_loc: {pixel00_loc:?}\
-		// ", camera.viewport.viewport_u, camera.viewport.viewport_v);
 
 		Self { image, camera, pixel_delta_u, pixel_delta_v, viewport_upper_left, pixel00_loc }
 	}
