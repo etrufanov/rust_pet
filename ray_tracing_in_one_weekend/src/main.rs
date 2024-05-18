@@ -1,20 +1,36 @@
-mod create_img_arr;
-mod image_generators_catalog;
-mod write_img_arr_to_file;
+mod scene;
+mod utils;
+mod vector;
 
 use std::path::Path;
 
-use create_img_arr::create_img_arr;
-use image_generators_catalog::black_and_white_gradient::BlackAndWhiteGradient;
-use write_img_arr_to_file::write_img_arr_to_file;
+use scene::{
+    camera::Camera,
+    scene_objects::{sphere::Sphere, SceneObject},
+    Scene,
+};
+use utils::write_img_arr_to_file::write_img_arr_to_file;
+use vector::Vector;
 
 const IMAGES_DIR: &str = "./src/images";
 
 fn main() {
-    let black_and_white_gradient_path: &Path = &Path::new(IMAGES_DIR).join("black_and_white_gradient.ppm");
+    let camera = Camera::default();
 
-    let black_and_white_gradient = BlackAndWhiteGradient::new(512, 512);
-    let black_and_white_gradient_arr = create_img_arr(&black_and_white_gradient);
+    let mut scene = Scene::new(camera);
 
-    write_img_arr_to_file(black_and_white_gradient_path, black_and_white_gradient_arr);
+    let scene_objects: Vec<Box<dyn SceneObject>> = vec![
+        Box::new(Sphere::new(Vector::new(0.3, 0.0, -1.3), 0.3, [255, 0, 0])),
+        Box::new(Sphere::new(Vector::new(0.1, 0.1, -0.5), 0.1, [0, 255, 255])),
+        Box::new(Sphere::new(Vector::new(0.0, 0.0, -1.0), 0.3, [255, 255, 255])),
+    ];
+    scene.add_objects(scene_objects);
+
+    let img_width = 640;
+
+    if let Some(render_result) = scene.render(img_width) {
+        let white_sphere_path: &Path = &Path::new(IMAGES_DIR).join("white_sphere.ppm");
+
+        write_img_arr_to_file(white_sphere_path, render_result);
+    }
 }

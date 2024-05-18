@@ -15,6 +15,8 @@ pub fn write_img_arr_to_file(path: &std::path::Path, img_arr: Vec<Vec<[u8; 3]>>)
     let img_height = img_arr.len();
     let img_width = img_arr[0].len();
 
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+
     match fs::OpenOptions::new()
         .write(true)
         .truncate(true)
