@@ -1,6 +1,4 @@
-pub mod scene_objects;
-
-use crate::{camera::Camera, image_generators_catalog::{Image, ImageShape}, vector::Vector};
+use crate::{image_generators_catalog::{Image, ImageShape}, scene::camera::Camera, vector::Vector};
 
 /// Base class to define how image relates to camera 
 pub struct ImageWithCamera {
@@ -26,22 +24,22 @@ impl ImageWithCamera {
 	{
 		let [image_width, image_height] = image.shape();
 
-		let pixel_delta_u = camera.viewport.viewport_u / (image_width as f64);
-		let pixel_delta_v = camera.viewport.viewport_v / (image_height as f64);
+		let pixel_delta_u = &camera.viewport.viewport_u / (image_width as f64);
+		let pixel_delta_v = &camera.viewport.viewport_v / (image_height as f64);
 
-		let viewport_upper_left = camera.camera_center -
-			Vector::new(0.0, 0.0, camera.focal_length) -
-			camera.viewport.viewport_u / 2.0 -
-			camera.viewport.viewport_v / 2.0;
-		let pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) / 2.0;
+		let viewport_upper_left = &(&(&camera.camera_center -
+			&Vector::new(0.0, 0.0, camera.focal_length)) -
+			&(&camera.viewport.viewport_u / 2.0)) -
+			&(&camera.viewport.viewport_v / 2.0);
+		let pixel00_loc = &viewport_upper_left + &(&(&pixel_delta_u + &pixel_delta_v) / 2.0);
 
 		Self { image, camera, pixel_delta_u, pixel_delta_v, viewport_upper_left, pixel00_loc }
 	}
 
 	/// Returns delta vector from camera center to pixel
 	pub fn get_pixel_vector(&self, x: u16, y: u16) -> Vector {
-		let pixel_center = self.pixel00_loc + (self.pixel_delta_u * (x as f64)) + (self.pixel_delta_v * (y as f64));
-		let vector = pixel_center - self.camera.camera_center;
+		let pixel_center = &(&self.pixel00_loc + &(&self.pixel_delta_u * (x as f64))) + &(&self.pixel_delta_v * (y as f64));
+		let vector = &pixel_center - &self.camera.camera_center;
 
 		vector
 	}

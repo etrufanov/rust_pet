@@ -2,6 +2,7 @@ use crate::vector::Vector;
 
 use super::RayToObjectHandler;
 
+#[derive(Clone, Copy)]
 /// sphere object inside a scene
 pub struct Sphere {
 	center: Vector,
@@ -27,7 +28,7 @@ impl Sphere {
 }
 
 impl RayToObjectHandler for Sphere {
-	fn does_ray_intersect(&self, pixel_vec: Vector) -> bool {
+	fn does_ray_intersect(&self, pixel_vec: &Vector) -> bool {
 		// 1. system of equations (underscores stands for vector):
 		//  - 
 		// /  radius^2 = ||_center_ - _r_||^2

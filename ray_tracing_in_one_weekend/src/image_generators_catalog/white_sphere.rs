@@ -1,6 +1,6 @@
-use crate::vector::Vector;
+use crate::{scene::scene_objects::{sphere::Sphere, RayToObjectHandler}, vector::Vector};
 
-use super::{image_with_camera::{scene_objects::{sphere::Sphere, RayToObjectHandler}, ImageWithCamera}, ImageShape, PixelData};
+use super::{image_with_camera::ImageWithCamera, ImageShape, PixelData};
 
 /// image with white sphere
 pub struct WhiteSphere {
@@ -31,7 +31,7 @@ impl PixelData for WhiteSphere {
     fn get_pixel_rgb(&self, x: u16, y: u16) -> [u8; 3] {
 		let ray = self.image_with_camera.get_pixel_vector(x, y);
 
-		let pixel_rgb = if self.object.does_ray_intersect(ray) { self.object.color } else { [0, 0, 0] };
+		let pixel_rgb = if self.object.does_ray_intersect(&ray) { self.object.color } else { [0, 0, 0] };
 		pixel_rgb
     }
 }

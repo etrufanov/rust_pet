@@ -1,3 +1,5 @@
+use crate::scene::Scene;
+
 pub mod image_with_camera;
 pub mod black_and_white_gradient;
 pub mod white_sphere;
