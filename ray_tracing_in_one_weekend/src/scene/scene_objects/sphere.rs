@@ -40,7 +40,7 @@ impl Sphere {
 
 impl RayToObjectHandler for Sphere {
     fn calc_ray_intersection(&self, pixel_vec: &Ray) -> Option<Vec<Vector>> {
-        // 1. system of equations (underscores stands for vector):
+        // 1. system of equations (underscores stand for vector):
         // --
         // |  radius^2 = ||_center_ - _r_||^2
         // |  _r_ = _pixel_vec_ * t
