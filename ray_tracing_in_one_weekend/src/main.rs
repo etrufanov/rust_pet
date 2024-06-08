@@ -26,10 +26,11 @@ fn main() {
     ];
     scene.add_objects(scene_objects);
 
-    let img_width = 640;
+    let img_width = 480;
+    let antialiasing = true;
 
-    if let Some(render_result) = scene.render(img_width) {
-        let white_sphere_path: &Path = &Path::new(IMAGES_DIR).join("white_sphere.ppm");
+    if let Some(render_result) = scene.render(img_width, antialiasing) {
+        let white_sphere_path: &Path = &Path::new(IMAGES_DIR).join("white_sphere_antialised.ppm");
 
         write_img_arr_to_file(white_sphere_path, render_result);
     }

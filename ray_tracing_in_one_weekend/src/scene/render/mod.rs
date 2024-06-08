@@ -99,7 +99,39 @@ impl Scene {
         }
     }
 
-    pub fn render(&mut self, img_width: u16) -> Option<RenderResult> {
+    /// Performs pixel anialiasing
+    /// (currently by calculating mean color of a square 3x3 with the given pixel located at the center)
+    fn perform_pixel_antialiasing(&self, img_arr: &Vec<Vec<Color>>, x: usize, y: usize) -> Color {
+        let img_height = img_arr.len();
+        let img_width = img_arr[0].len();
+
+        let mut neight_cnt: u8 = 0;
+        let mut new_color: [f64; 3] = [0.0, 0.0, 0.0];
+
+        for j in (-1 as i32)..1 {
+            let y_new = (y as i32) - j;
+            if y_new >= 0 && y_new < (img_height as i32) {
+                for i in (-1 as i32)..1 {
+                    let x_new = (x as i32) - i;
+                    if x_new >= 0 && x_new < (img_width as i32) {
+                        neight_cnt += 1;
+
+                        new_color[0] += img_arr[y_new as usize][x_new as usize][0] as f64;
+                        new_color[1] += img_arr[y_new as usize][x_new as usize][1] as f64;
+                        new_color[2] += img_arr[y_new as usize][x_new as usize][2] as f64;
+                    }
+                }
+            }
+        }
+
+        [
+            (new_color[0] / (neight_cnt as f64)).round() as u8,
+            (new_color[1] / (neight_cnt as f64)).round() as u8,
+            (new_color[2] / (neight_cnt as f64)).round() as u8,
+        ]
+    }
+
+    pub fn render(&mut self, img_width: u16, antialiasing: bool) -> Option<RenderResult> {
         self.prepare_render(img_width);
 
         if let Renderer {
@@ -156,6 +188,14 @@ impl Scene {
                         .collect::<Vec<Color>>()
                 })
                 .collect::<Vec<Vec<Color>>>();
+
+            if antialiasing {
+                return Some(img_arr.iter().enumerate().map(|(y, row)| {
+                    row.iter().enumerate().map(|(x, _)| {
+                        self.perform_pixel_antialiasing(&img_arr, x, y)
+                    }).collect::<Vec<Color>>()
+                }).collect::<Vec<Vec<Color>>>());
+            }
 
             Some(img_arr)
         } else {
