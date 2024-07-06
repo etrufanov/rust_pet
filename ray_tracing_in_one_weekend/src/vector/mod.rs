@@ -25,16 +25,20 @@ impl Vector {
         self.dot(&self)
     }
 
+    pub fn normalize(&self) -> Self {
+        self / self.sq_norm()
+    }
+
     pub fn x(&self) -> f64 {
         self.x
     }
 
     pub fn y(&self) -> f64 {
-        self.x
+        self.y
     }
 
     pub fn z(&self) -> f64 {
-        self.x
+        self.z
     }
 }
 

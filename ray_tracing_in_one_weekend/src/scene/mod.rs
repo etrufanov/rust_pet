@@ -8,6 +8,9 @@ use scene_objects::SceneObject;
 
 use self::render::Renderer;
 
+/// Object's color as [r, g, b]
+pub type Color = [u8; 3];
+
 /// Describes the whole scene:
 /// - camera & viewport
 /// - scene objects

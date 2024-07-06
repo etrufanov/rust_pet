@@ -1,6 +1,6 @@
 use crate::vector::Vector;
 
-use super::{scene_objects::Color, utils::sort_vectors_by_z::sort_enumerated_vectors_by_z, Scene};
+use super::{utils::sort_vectors_by_z::sort_enumerated_vectors_by_z, Color, Scene};
 
 /// Result render image's shape
 pub struct ImageShape {
@@ -139,7 +139,7 @@ impl Scene {
             params: Some(params),
         } = &self.renderer
         {
-            // Returns delta vector from camera center to pixel
+            // Returns delta vector from (0, 0, -focal_length) to pixel
             let get_pixel_vector = |x: u16, y: u16| -> Vector {
                 let pixel_center = params.pixel00_loc
                     + params.pixel_delta_u * (x as f64)
@@ -170,7 +170,14 @@ impl Scene {
                 {
                     self.objects[*i].get_color(&ray)
                 } else {
-                    [0, 0, 0]
+                    let ray_normalized = ray.normalize();
+                    let a = 0.5 * (ray_normalized.y() + 1.0);
+
+                    [
+                        ((1.0 - a) * 255.0 + a * 127.5).round() as u8,
+                        ((1.0 - a) * 255.0 + a * 178.5).round() as u8,
+                        ((1.0 - a) * 255.0 + a * 255.0).round() as u8,
+                    ]
                 };
 
                 pixel_rgb
@@ -190,11 +197,18 @@ impl Scene {
                 .collect::<Vec<Vec<Color>>>();
 
             if antialiasing {
-                return Some(img_arr.iter().enumerate().map(|(y, row)| {
-                    row.iter().enumerate().map(|(x, _)| {
-                        self.perform_pixel_antialiasing(&img_arr, x, y)
-                    }).collect::<Vec<Color>>()
-                }).collect::<Vec<Vec<Color>>>());
+                return Some(
+                    img_arr
+                        .iter()
+                        .enumerate()
+                        .map(|(y, row)| {
+                            row.iter()
+                                .enumerate()
+                                .map(|(x, _)| self.perform_pixel_antialiasing(&img_arr, x, y))
+                                .collect::<Vec<Color>>()
+                        })
+                        .collect::<Vec<Vec<Color>>>(),
+                );
             }
 
             Some(img_arr)

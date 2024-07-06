@@ -2,8 +2,7 @@ pub mod sphere;
 
 use crate::vector::{Ray, Vector};
 
-/// Object's color as [r, g, b]
-pub type Color = [u8; 3];
+use super::Color;
 
 /// Describes the interaction between a ray from a pixel and an object in a scene
 pub trait RayToObjectHandler {
