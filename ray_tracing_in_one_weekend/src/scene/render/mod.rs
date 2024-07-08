@@ -1,6 +1,8 @@
-use crate::vector::Vector;
+use rand::Rng;
 
-use super::{scene_objects::Color, utils::sort_vectors_by_z::sort_enumerated_vectors_by_z, Scene};
+use crate::vector::{Ray, Vector};
+
+use super::{utils::sort_vectors_by_z::sort_enumerated_vectors_by_z, Color, Scene};
 
 /// Result render image's shape
 pub struct ImageShape {
@@ -99,39 +101,16 @@ impl Scene {
         }
     }
 
-    /// Performs pixel anialiasing
-    /// (currently by calculating mean color of a square 3x3 with the given pixel located at the center)
-    fn perform_pixel_antialiasing(&self, img_arr: &Vec<Vec<Color>>, x: usize, y: usize) -> Color {
-        let img_height = img_arr.len();
-        let img_width = img_arr[0].len();
+    pub fn render(
+        &mut self,
+        img_width: u16,
+        antialiasing_iters_: Option<u16>,
+        reflection_max_iters_: Option<u16>,
+    ) -> Option<RenderResult> {
+        let antialiasing_iters = antialiasing_iters_.unwrap_or(1);
+        let is_antialiasing_enabled = antialiasing_iters > 1;
+        let reflection_max_iters = reflection_max_iters_.unwrap_or(10);
 
-        let mut neight_cnt: u8 = 0;
-        let mut new_color: [f64; 3] = [0.0, 0.0, 0.0];
-
-        for j in (-1 as i32)..1 {
-            let y_new = (y as i32) - j;
-            if y_new >= 0 && y_new < (img_height as i32) {
-                for i in (-1 as i32)..1 {
-                    let x_new = (x as i32) - i;
-                    if x_new >= 0 && x_new < (img_width as i32) {
-                        neight_cnt += 1;
-
-                        new_color[0] += img_arr[y_new as usize][x_new as usize][0] as f64;
-                        new_color[1] += img_arr[y_new as usize][x_new as usize][1] as f64;
-                        new_color[2] += img_arr[y_new as usize][x_new as usize][2] as f64;
-                    }
-                }
-            }
-        }
-
-        [
-            (new_color[0] / (neight_cnt as f64)).round() as u8,
-            (new_color[1] / (neight_cnt as f64)).round() as u8,
-            (new_color[2] / (neight_cnt as f64)).round() as u8,
-        ]
-    }
-
-    pub fn render(&mut self, img_width: u16, antialiasing: bool) -> Option<RenderResult> {
         self.prepare_render(img_width);
 
         if let Renderer {
@@ -139,41 +118,92 @@ impl Scene {
             params: Some(params),
         } = &self.renderer
         {
-            // Returns delta vector from camera center to pixel
+            // Returns delta vector from (0, 0, -focal_length) to pixel center
+            // If antialiasing is enabled (antialiasing_iters > 1)
+            // returns the vector to some random point inside pixel (not necessarily pixel center)
             let get_pixel_vector = |x: u16, y: u16| -> Vector {
+                let mut rng = rand::thread_rng();
+
                 let pixel_center = params.pixel00_loc
-                    + params.pixel_delta_u * (x as f64)
-                    + params.pixel_delta_v * (y as f64);
+                    + params.pixel_delta_u
+                        * (x as f64
+                            + if is_antialiasing_enabled {
+                                rng.gen_range(-0.5..0.5)
+                            } else {
+                                0.0
+                            })
+                    + params.pixel_delta_v
+                        * (y as f64
+                            + if is_antialiasing_enabled {
+                                rng.gen_range(-0.5..0.5)
+                            } else {
+                                0.0
+                            });
                 let vector = pixel_center - self.camera.camera_center;
 
                 vector
             };
 
-            // Returns color for the given pixel (x, y)
-            let get_pixel_rgb = |x: u16, y: u16| -> Color {
-                let ray = get_pixel_vector(x, y);
+            // Returns color (0.0-1.0 range for each color component) for the given pixel (x, y)
+            let get_pixel_rgb = |x: u16, y: u16| -> Vector {
+                let mut result = Vector::default();
 
-                let mut objects_intersection_list =
-                    self.objects
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, object)| {
-                            object.calc_ray_intersection(&ray).and_then(
-                                |intersection_coords_list| Some((i, intersection_coords_list[0])),
-                            )
-                        })
-                        .collect::<Vec<(usize, Vector)>>();
+                // antialiasing cycle
+                for _ in 0..antialiasing_iters {
+                    let mut pixel_rgb_coeff: f64 = 1.0;
+                    let mut pixel_rgb = Vector::default();
 
-                sort_enumerated_vectors_by_z(objects_intersection_list.as_mut());
+                    let mut ray = Ray::new(self.camera.camera_center, get_pixel_vector(x, y));
 
-                let pixel_rgb: Color = if let Some((i, _coords)) = objects_intersection_list.first()
-                {
-                    self.objects[*i].get_color(&ray)
-                } else {
-                    [0, 0, 0]
-                };
+                    // reflection cycle
+                    for _ in 0..reflection_max_iters {
+                        let mut objects_intersection_list = self
+                            .objects
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, object)| {
+                                object
+                                    .calc_ray_intersection(&ray)
+                                    .and_then(|intersection_coords| Some((i, intersection_coords)))
+                            })
+                            .collect::<Vec<(usize, Vector)>>();
 
-                pixel_rgb
+                        sort_enumerated_vectors_by_z(objects_intersection_list.as_mut());
+
+                        if let Some((i, coords)) = objects_intersection_list.first() {
+                            // crutch for simple diffuse objects
+                            if self.objects[*i].get_diffusion() > 0.9 {
+                                pixel_rgb_coeff *= 0.5;
+                                let normal_vector = self.objects[*i].get_normal_vector(coords);
+
+                                ray = Ray::new(
+                                    *coords,
+                                    Vector::gen_rand_inside_hemisphere(Some(normal_vector)),
+                                );
+                            } else {
+                                let color = self.objects[*i].get_color(&ray);
+                                pixel_rgb =
+                                    Vector::new(color[0] as f64, color[1] as f64, color[2] as f64)
+                                        / 255.0;
+
+                                break;
+                            }
+                        } else {
+                            // return background color if no object hit
+                            let background_coords = Vector::from(ray).normalize();
+                            let a = 0.5 * (background_coords.y() + 1.0);
+
+                            pixel_rgb = Vector::new(1.0, 1.0, 1.0) * (1.0 - a)
+                                + Vector::new(0.5, 0.7, 1.0) * a;
+
+                            break;
+                        };
+                    }
+
+                    result = result + pixel_rgb * pixel_rgb_coeff
+                }
+
+                result / (antialiasing_iters as f64)
             };
 
             // Creates an image representation in array (`Vec<Vec<[u8; 3]>>`)
@@ -184,18 +214,10 @@ impl Scene {
                 .map(|y| {
                     (0..img_shape.width)
                         .into_iter()
-                        .map(|x| get_pixel_rgb(x, y))
+                        .map(|x| Color::from(get_pixel_rgb(x, y)))
                         .collect::<Vec<Color>>()
                 })
                 .collect::<Vec<Vec<Color>>>();
-
-            if antialiasing {
-                return Some(img_arr.iter().enumerate().map(|(y, row)| {
-                    row.iter().enumerate().map(|(x, _)| {
-                        self.perform_pixel_antialiasing(&img_arr, x, y)
-                    }).collect::<Vec<Color>>()
-                }).collect::<Vec<Vec<Color>>>());
-            }
 
             Some(img_arr)
         } else {
